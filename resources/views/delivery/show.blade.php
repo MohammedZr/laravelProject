@@ -44,6 +44,34 @@
     <div class="rounded-2xl border border-[var(--line)] bg-[var(--bg-card)] shadow-soft p-4">
       <div class="text-[var(--brand-ink)] font-semibold mb-2">موقع الصيدلية</div>
       <div id="map" class="h-[360px] rounded-xl border-2 border-[var(--ink)]"></div>
+
+      @php
+        $lat = $order->delivery_lat;
+        $lng = $order->delivery_lng;
+        $webUrl = "https://www.google.com/maps/dir/?api=1&destination={$lat},{$lng}&travelmode=driving";
+        $androidUrl = "google.navigation:q={$lat},{$lng}";
+      @endphp
+
+      @if($lat && $lng)
+      <div class="mt-4 flex justify-center">
+        <a id="gpsDirBtn"
+           href="{{ $webUrl }}"
+           class="btn w-full sm:w-auto text-center rounded-xl px-5 py-3 text-base bg-[var(--brand)] text-white">
+           🚗 الاتجاهات إلى الموقع
+        </a>
+      </div>
+
+      <script>
+        (function(){
+          const isAndroid = /Android/i.test(navigator.userAgent);
+          const btn = document.getElementById('gpsDirBtn');
+          if(isAndroid){
+            btn.href = "{{ $androidUrl }}";
+          }
+        })();
+      </script>
+      @endif
+
     </div>
   </div>
 
@@ -70,4 +98,5 @@
       }
     })();
   </script>
+  
 @endsection

@@ -22,6 +22,9 @@
     .connector:last-child:after{ display:none }
   </style>
 
+  {{-- تحميل Web Component للوتّي --}}
+  <script type="module" src="https://unpkg.com/@lottiefiles/dotlottie-wc@latest/dist/dotlottie-wc.js"></script>
+
   {{-- HERO --}}
   <section class="relative overflow-hidden">
     <div class="flex flex-col lg:flex-row items-center gap-8">
@@ -55,34 +58,14 @@
         </div>
       </div>
 
+      {{-- ✅ استبدال الرسم القديم بـ Lottie --}}
       <div class="flex-1 flex justify-center reveal">
-        <!-- Illustration: Bowl of Hygieia + عناصر طافية -->
-        <div class="relative w-[320px] h-[320px]">
-          <div class="absolute inset-0 rounded-3xl bg-[var(--bg-page)] border-2 border-[var(--ink)] shadow-soft"></div>
-
-          <div class="absolute inset-0 flex items-center justify-center animate-float">
-            <span class="inline-flex h-28 w-28 items-center justify-center rounded-2xl bg-[var(--brand)]/15 text-[var(--brand-ink)] border-2 border-[var(--brand)]">
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   xmlns="http://www.w3.org/2000/svg" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 10h12c0 2.6-3.2 4.5-6 4.5S6 12.6 6 10Z"/>
-                <path d="M12 14.5V20"/><path d="M9 20h6"/>
-                <path d="M15 5c-1.6 0-2.6.8-2.6 2s1 2 2.6 2H17c1.6 0 2.6.8 2.6 2s-1 2-2.6 2h-5.5"/>
-                <path d="M17 5l2-1"/>
-              </svg>
-            </span>
-          </div>
-
-          <!-- فقاعات صغيرة -->
-          <div class="absolute -top-2 start-6 animate-float" style="animation-delay:.2s">
-            <div class="h-6 w-6 rounded-full bg-[var(--brand)]/25 border border-[var(--brand)]"></div>
-          </div>
-          <div class="absolute bottom-4 end-6 animate-float" style="animation-delay:.6s">
-            <div class="h-4 w-4 rounded-full bg-[var(--brand)]/25 border border-[var(--brand)]"></div>
-          </div>
-          <div class="absolute top-10 end-1 animate-float" style="animation-delay:1s">
-            <div class="h-5 w-5 rounded-full bg-[var(--brand)]/25 border border-[var(--brand)]"></div>
-          </div>
-        </div>
+        <dotlottie-wc
+          src="https://lottie.host/76ced6f0-9bae-431f-8767-bfcb87488c69/qSkoaZAdt6.lottie"
+          style="width: 300px; height: 300px"
+          autoplay
+          loop
+        ></dotlottie-wc>
       </div>
     </div>
   </section>
@@ -156,7 +139,7 @@
         <div class="font-semibold">المندوب</div>
         <p class="text-[var(--muted)] mt-1">يتسلّم الطلب من الشركة ويبدأ التوصيل.</p>
       </div>
-      <div class="rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--ink)] p-4 reveal">
+      <div class="rounded-ص2 bg-[var(--bg-card)] border-2 border-[var(--ink)] p-4 reveal">
         <div class="font-semibold">إتمام</div>
         <p class="text-[var(--muted)] mt-1">التسليم والفوترة — مع تقارير دورية للشركة.</p>
       </div>

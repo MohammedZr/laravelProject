@@ -15,7 +15,7 @@ class DashboardController extends Controller
         $status = $request->query('status');
 
         $orders = Order::with(['pharmacy:id,name','delivery'])
-            ->whereHas('delivery', fn($q)=>$q->where('courier_id',$courierId)
+            ->whereHas('delivery', fn($q)=>$q->where('delivery_user_id', $courierId)
                                              ->when($status, fn($qq)=>$qq->where('status',$status)))
             ->latest()
             ->paginate(12)
@@ -63,6 +63,6 @@ class DashboardController extends Controller
 
     protected function authorizeCourier(Order $order): void
     {
-        abort_unless(optional($order->delivery)->courier_id === auth()->id(), 403);
+        abort_unless(optional($order->delivery)->delivery_user_id === auth()->id(), 403);
     }
 }

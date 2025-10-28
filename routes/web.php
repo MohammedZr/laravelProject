@@ -35,7 +35,6 @@ Route::get('/redirect', function () {
     return match ($role) {
         'admin'    => redirect('/admin/dashboard'),
         'company'  => redirect('/company/groups'),
-        'delivery' => redirect('/delivery/dashboard'),
         default    => redirect('/pharmacy/search'),
     };
 })->middleware('auth');
