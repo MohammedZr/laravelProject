@@ -25,8 +25,7 @@
   .shadow-soft { box-shadow:0 6px 24px rgba(14, 42, 44, 0.06); }
 
   /* =========================
-     حقول الإدخال (Borders واضحة)
-     نطبّقها على أغلب أنواع الحقول بدون ما تحتاج تضيف كلاس
+     حقول الإدخال
      ========================= */
   :where(
     input[type="text"],
@@ -44,7 +43,7 @@
   ){
     appearance: none;
     width: 100%;
-    border: 1.2px solid var(--ink);          /* ← بوردر واضح وغامق */
+    border: 1.2px solid var(--ink);
     background: #fff;
     color: var(--ink);
     border-radius: 12px;
@@ -71,7 +70,6 @@
     box-shadow: 0 0 0 3px rgba(14, 42, 44, .12);
   }
 
-  /* حالة معطّل / للقراءة فقط */
   :where(
     input[type="text"],
     input[type="password"],
@@ -105,27 +103,6 @@
     cursor: not-allowed;
   }
 
-  /* حالة خطأ (لو تضيف aria-invalid أو is-invalid) */
-  :where(
-    input[type="text"],
-    input[type="password"],
-    input[type="email"],
-    input[type="number"],
-    input[type="search"],
-    input[type="tel"],
-    input[type="url"],
-    input[type="datetime-local"],
-    input[type="date"],
-    input[type="time"],
-    select,
-    textarea
-  )[aria-invalid="true"],
-  .is-invalid{
-    border-color: #d14343 !important;
-    box-shadow: 0 0 0 3px rgba(209, 67, 67, .12) !important;
-  }
-
-  /* (اختياري) لو تحب تظل كلاس .input متاح كما قبل */
   .input{
     width:100%;
     border-radius:12px;
@@ -138,85 +115,51 @@
     border-color: var(--brand-ink);
     box-shadow:0 0 0 3px rgba(14, 42, 44, .12);
   }
+
   /* ===========================
-   أزرار احترافية — عامة للجميع
+   الأزرار
    =========================== */
-.btn,
-button,
-a.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .4rem;
-  font-size: .9rem;
-  font-weight: 600;
-  color: #fff;
-  background: var(--brand);
-  padding: .65rem 1rem;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background .2s ease, opacity .2s ease, transform .1s ease;
-}
+  .btn,
+  button,
+  a.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    font-size: .9rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--brand);
+    padding: .65rem 1rem;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .2s ease, opacity .2s ease, transform .1s ease;
+  }
+  .btn:hover,
+  button:hover,
+  a.btn:hover { opacity: .9; }
 
-/* hover */
-.btn:hover,
-button:hover,
-a.btn:hover {
-  opacity: .9;
-}
+  .btn-secondary { background: var(--muted); }
+  .btn-danger { background: #e04747; }
+  .btn-danger:hover { background: #d03939; }
+  .btn-outline { background: transparent; color: var(--brand-ink); border: 1.5px solid var(--brand); }
+  .btn-outline:hover { background: var(--brand); color: #fff; }
 
-/* زر ثانوي */
-.btn-secondary {
-  background: var(--muted);
-}
-
-/* زر خطير (حذف..) */
-.btn-danger {
-  background: #e04747;
-}
-
-.btn-danger:hover {
-  background: #d03939;
-}
-
-/* زر إطار فقط */
-.btn-outline {
-  background: transparent;
-  color: var(--brand-ink);
-  border: 1.5px solid var(--brand);
-}
-
-.btn-outline:hover {
-  background: var(--brand);
-  color: #fff;
-}
-
-/* حجم صغير */
-.btn-sm {
-  padding: .4rem .75rem;
-  font-size: .8rem;
-  border-radius: 10px;
-}
-
-/* لمنع تحجيم أزرار الأيقونات الصغيرة */
-.btn-icon {
-  width: 2.4rem;
-  height: 2.4rem;
-  padding: 0;
-  justify-content: center;
-}
-
-</style>
-
+  .btn-sm { padding: .4rem .75rem; font-size: .8rem; border-radius: 10px; }
+  .btn-icon { width: 2.4rem; height: 2.4rem; padding: 0; justify-content: center; }
+  </style>
 </head>
 
 <body class="min-h-dvh flex flex-col">
 @php
     use Illuminate\Support\Facades\Route as RouteFacade;
-@endphp
+    $role = auth()->check() ? auth()->user()->role : null;
 
+    // ✅ اجعل الرئيسية ثابتة إلى landing/
+    $homeUrl = RouteFacade::has('landing') ? route('landing') : url('/landing');
+@endphp
 
 <header class="bg-[var(--bg-card)] border-b border-[var(--line)] shadow-soft">
   <div class="mx-auto max-w-7xl w-full px-4 sm:px-6">
@@ -225,12 +168,12 @@ a.btn:hover {
     <input id="nav-toggle" type="checkbox" class="hidden peer" />
 
     <div class="flex items-center justify-between h-16">
-      <!-- Logo -->
-      <a href="{{ url('/') }}" class="flex items-center gap-2 font-bold text-[var(--brand-ink)]">
+      <!-- ✅ Logo: يوجّه إلى /landing -->
+      <a href="{{ $homeUrl }}" class="flex items-center gap-2 font-bold text-[var(--brand-ink)]">
         <span class="h-10 w-10 rounded-lg bg-[var(--brand)] inline-flex items-center justify-center text-[var(--brand-ink)]">
           🧪
         </span>
-        <span>{{ config('app.name') }}</span>
+        <span>منصة صيدلية</span>
       </a>
 
       <!-- Burger -->
@@ -242,12 +185,13 @@ a.btn:hover {
 
       <!-- Desktop Links -->
       <nav class="hidden md:flex items-center gap-6 text-sm">
-        <a href="{{ url('/') }}" class="hover:text-[var(--brand-ink)]">الرئيسية</a>
+        <a href="{{ $homeUrl }}" class="hover:text-[var(--brand-ink)]">الرئيسية</a>
 
         @auth
           @php $role = auth()->user()->role; @endphp
 
           @if ($role === 'pharmacy')
+            {{-- السلة --}}
             <button id="open-cart-sidebar"
                     class="relative px-3 py-1.5 border rounded-lg border-[var(--line)] hover:bg-[var(--line)]/60">
               السلة
@@ -257,6 +201,13 @@ a.btn:hover {
                 </span>
               @endif
             </button>
+
+            {{-- زر بحث الأدوية --}}
+            <a href="{{ RouteFacade::has('pharmacy.search') ? route('pharmacy.search') : url('/pharmacy/search') }}"
+               class="px-3 py-1.5 rounded-lg border border-[var(--line)] hover:bg-[var(--line)]/60">
+              بحث الأدوية
+            </a>
+
           @elseif ($role === 'company')
             <a class="hover:text-[var(--brand-ink)]"
                href="{{ route('company.orders.index') }}">الطلبيات</a>
@@ -281,10 +232,9 @@ a.btn:hover {
       </nav>
     </div>
 
-
     <!-- ✅ Mobile Menu -->
     <div class="hidden peer-checked:flex flex-col gap-2 md:hidden pb-4 rounded-lg bg-[var(--bg-card)] shadow-soft">
-      <a href="{{ url('/') }}" class="px-3 py-2 rounded hover:bg-[var(--line)]">الرئيسية</a>
+      <a href="{{ $homeUrl }}" class="px-3 py-2 rounded hover:bg-[var(--line)]">الرئيسية</a>
 
       @auth
         @if ($role === 'pharmacy')
@@ -292,6 +242,11 @@ a.btn:hover {
                   class="px-3 py-2 text-start border rounded-lg hover:bg-[var(--line)]/60">
             السلة
           </button>
+
+          <a href="{{ RouteFacade::has('pharmacy.search') ? route('pharmacy.search') : url('/pharmacy/search') }}"
+             class="px-3 py-2 rounded hover:bg-[var(--line)]">
+            بحث الأدوية
+          </a>
 
         @elseif ($role === 'company')
           <a href="{{ route('company.orders.index') }}"

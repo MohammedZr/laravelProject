@@ -4,17 +4,16 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    // GET /company/orders
     public function index(Request $request)
     {
         $companyId = auth()->id();
-
-        $status = $request->query('status'); // pending, confirmed, preparing, out_for_delivery, completed, cancelled
-        $search = $request->query('q');      // رقم الطلب أو اسم الصيدلية
+        $status = $request->get('status');
+        $search = $request->get('q');
 
         $orders = Order::query()
             ->with(['pharmacy:id,name', 'items.drug:id,name,generic_name,image_url'])
@@ -30,39 +29,42 @@ class OrderController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        $counts = Order::selectRaw('status, COUNT(*) as c')
+        // عدد الحالات لتلخيص الواجهة
+        $counts = Order::selectRaw('status, COUNT(*) as total')
             ->where('company_id', $companyId)
-            ->groupBy('status')->pluck('c','status');
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
 
-        $title = 'إدارة الطلبيات';
-        return view('company.orders.index', compact('orders','counts','status','search','title'));
+        return view('company.orders.index', compact('orders', 'counts', 'search', 'status'));
     }
 
-    // GET /company/orders/{order}
     public function show(Order $order)
     {
-        $this->authorizeCompany($order);
-        $order->load(['pharmacy:id,name,email','items.drug']);
-        $title = "تفاصيل الطلب #{$order->id}";
-        return view('company.orders.show', compact('order','title'));
+        abort_unless($order->company_id === auth()->id(), 403);
+
+        // جلب تفاصيل الطلب والعناصر
+        $order->load(['pharmacy:id,name', 'items.drug:id,name,generic_name,image_url']);
+
+        // جلب قائمة مندوبي الشركة فقط
+        $couriers = User::where('role', 'delivery')
+            ->where('company_id', auth()->id())
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('company.orders.show', compact('order', 'couriers'));
     }
 
-    // PATCH /company/orders/{order}/status
     public function updateStatus(Request $request, Order $order)
     {
-        $this->authorizeCompany($order);
+        abort_unless($order->company_id === auth()->id(), 403);
 
         $validated = $request->validate([
-            'status' => 'required|in:pending,confirmed,preparing,out_for_delivery,completed,cancelled',
+            'status' => 'required|string|in:pending,confirmed,preparing,out_for_delivery,completed,cancelled'
         ]);
 
         $order->update(['status' => $validated['status']]);
 
-        return back()->with('success', 'تم تحديث حالة الطلب.');
-    }
-
-    protected function authorizeCompany(Order $order): void
-    {
-        abort_unless($order->company_id === auth()->id(), 403);
+        return back()->with('success', 'تم تحديث حالة الطلب بنجاح.');
     }
 }

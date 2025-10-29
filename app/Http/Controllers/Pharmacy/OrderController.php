@@ -10,14 +10,19 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\User;   // شركة
+use App\Models\User;
+use App\Events\NewOrderCreated; // ✅ أضف هذا السطر للبث
 
 class OrderController extends Controller
 {
-    // GET /pharmacy/orders
+    /**
+     * عرض طلبات الصيدلية
+     * GET /pharmacy/orders
+     */
     public function index()
     {
         $user = Auth::user();
+
         $orders = Order::with(['company:id,name', 'items.drug:id,name,generic_name,image_url'])
             ->where('user_id', $user->id)
             ->latest()
@@ -29,59 +34,93 @@ class OrderController extends Controller
         ]);
     }
 
-    // POST /pharmacy/orders/checkout/{company}
-    public function checkoutCompany(Request $request, $companyId)
-    {
-        $pharmacy = Auth::user();
+    /**
+     * إرسال الطلب إلى شركة محددة من سلة الصيدلية
+     * POST /pharmacy/orders/checkout/{company}
+     */
+public function checkoutCompany(Request $request, User $company)
+{
+    abort_unless($company->role === 'company', 403);
 
-        // كرت مفتوح للصيدلية
-        $cart = Cart::firstOrCreate([
-            'user_id' => $pharmacy->id,
-            'status'  => 'open',
-        ]);
+    $pharmacy = $request->user();
 
-        // عناصر السلة الخاصة بهذه الشركة فقط
-        $items = CartItem::with(['drug:id,user_id,price'])
-            ->where('cart_id', $cart->id)
-            ->whereHas('drug', fn($q) => $q->where('user_id', $companyId))
-            ->get();
+    // ✅ جلب السلة المفتوحة للمستخدم الحالي
+    $cart = \App\Models\Cart::where('user_id', $pharmacy->id)
+                ->where('status', 'open')
+                ->first();
 
-        if ($items->isEmpty()) {
-            return back()->with('error', 'لا توجد عناصر تخص هذه الشركة في السلة.');
+    if (!$cart) {
+        return back()->with('status', '⚠️ لا توجد سلة حالياً.');
+    }
+
+    // ✅ جلب العناصر الخاصة بهذه الشركة فقط
+    $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                    ->whereHas('drug', fn($q) => $q->where('company_id', $company->id))
+                    ->get();
+
+    if ($cartItems->isEmpty()) {
+        return back()->with('status', '⚠️ السلة فارغة لهذه الشركة.');
+    }
+
+    // ✅ إنشاء الطلب داخل معاملة واحدة
+    $order = DB::transaction(function () use ($pharmacy, $company, $cartItems) {
+        $total = 0;
+        foreach ($cartItems as $item) {
+            $total += $item->unit_price * $item->quantity;
         }
 
-        // حساب الإجمالي وإنشاء الطلب + عناصره في ترانزاكشن
-        DB::transaction(function () use ($items, $pharmacy, $companyId, $cart) {
-            $total = $items->reduce(function ($carry, $it) {
-                $unit = $it->unit_price ?? optional($it->drug)->price ?? 0;
-                return $carry + ($unit * $it->quantity);
-            }, 0);
+        $order = \App\Models\Order::create([
+            'user_id'      => $pharmacy->id,
+            'company_id'   => $company->id,
+            'status'       => 'pending',
+            'total_amount' => $total,
+        ]);
 
-            $order = Order::create([
-                'user_id'     => $pharmacy->id,
-                'company_id'  => $companyId,
-                'status'      => 'pending',
-                'total_amount'=> $total,
+        foreach ($cartItems as $item) {
+            \App\Models\OrderItem::create([
+                'order_id'   => $order->id,
+                'drug_id'    => $item->drug_id,
+                'quantity'   => $item->quantity,
+                'unit_price' => $item->unit_price,
+                'line_total' => $item->unit_price * $item->quantity,  // ✅ أضفنا هذا السطر
+                    
             ]);
+        }
 
-            foreach ($items as $it) {
-                $unit = $it->unit_price ?? optional($it->drug)->price ?? 0;
-                OrderItem::create([
-                    'order_id'   => $order->id,
-                    'drug_id'    => $it->drug_id,
-                    'quantity'   => $it->quantity,
-                    'unit_price' => $unit,
-                    'line_total' => $unit * $it->quantity,
-                ]);
-            }
+        $order->load(['pharmacy:id,name,email', 'items.drug:id,name,generic_name,image_url']);
+        return $order;
+    });
 
-            // حذف العناصر التي تم طلبها من السلة (الخاصة بهذه الشركة فقط)
-            CartItem::where('cart_id', $cart->id)
-                ->whereHas('drug', fn($q) => $q->where('user_id', $companyId))
-                ->delete();
-        });
-
-        return redirect()->route('pharmacy.orders.index')
-            ->with('ok', 'تم إرسال الطلبية للشركة بنجاح.');
+    // ✅ حذف العناصر التي تم إرسالها من السلة
+    foreach ($cartItems as $item) {
+        $item->delete();
     }
+
+    // ✅ بثّ الإشعار للشركة
+    event(new \App\Events\NewOrderCreated($order));
+
+    return redirect()
+        ->route('pharmacy.orders.show', $order)
+        ->with('status', '✅ تم إرسال الطلبية بنجاح، وبُعث إشعار للشركة.');
+}
+public function show(Order $order)
+{
+    abort_unless($order->user_id === auth()->id(), 403);
+
+    // تحميل العلاقات المرتبطة
+    $order->load(['company:id,name', 'items.drug:id,name,generic_name,image_url']);
+
+    // تحديد الموقع الهدف (إحداثيات التسليم)
+    $targetLat = $order->delivery_lat ?? $order->pharmacy->lat ?? null;
+    $targetLng = $order->delivery_lng ?? $order->pharmacy->lng ?? null;
+
+    return view('pharmacy.orders.show', [
+        'order' => $order,
+        'title' => "تفاصيل الطلب #{$order->id}",
+        'targetLat' => $targetLat,
+        'targetLng' => $targetLng,
+    ]);
+}
+
+
 }

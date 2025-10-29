@@ -1,4 +1,4 @@
-@extends('layouts.layout', ['title' => 'مجموعات الأدوية'])
+@extends('layouts.layout', ['title' => 'درفتات الأدوية'])
 
 @section('content')
   @if (session('status'))
@@ -8,7 +8,7 @@
   @endif
 
   <div class="flex items-center justify-between mb-4">
-    <h1 class="text-xl font-bold text-[var(--brand-ink)]">مجموعات الأدوية</h1>
+    <h1 class="text-xl font-bold text-[var(--brand-ink)]">درفتات الأدوية</h1>
     <a href="{{ route('company.groups.create') }}" class="btn px-4 py-2 rounded-xl bg-[var(--brand)] text-white">إنشاء مجموعة</a>
   </div>
 

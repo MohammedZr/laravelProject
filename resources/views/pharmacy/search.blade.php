@@ -8,12 +8,14 @@
   @endif
 
   {{-- نموذج البحث: مصغّر ومتمركز --}}
-  <form method="GET" action="{{ route('pharmacy.search') }}"
-        class="mx-auto mb-6 flex flex-col items-stretch gap-3"
-        style="max-width: 820px" id="drug-search-form">
+ <form method="GET" action="{{ route('pharmacy.search') }}" id="drug-search-form"
+      onsubmit="return handleSearchSubmit(event);"
+      class="mx-auto mb-6 flex flex-col items-stretch gap-3"
+      style="max-width: 820px">
+
     <div class="flex flex-wrap items-center justify-center gap-3">
       <input type="text" name="q" value="{{ $q ?? '' }}" id="q"
-             class="input w-full sm:w-[520px]"
+             class="input w-full sm:w-[20px]"
              placeholder="ابحث بالاسم، المادة الفعّالة، الشكل، التركيز…">
       <button class="btn h-11 px-5 rounded-xl bg-[var(--brand)] text-white">بحث</button>
     </div>
@@ -52,66 +54,82 @@
     </div>
   </form>
 
-  <script>
-    // فلترة فورية للبطاقات أثناء الكتابة وتغيير الشيك بوكس
-    (function(){
-      const qInput = document.getElementById('q');
-      const container = document.getElementById('drug-cards');
-      const form = document.getElementById('drug-search-form');
-      const checkboxes = Array.from(form.querySelectorAll('input[name="fields[]"]'));
+ <script>
+(function(){
+  const qInput = document.getElementById('q');
+  const container = document.getElementById('drug-cards');
+  const form = document.getElementById('drug-search-form');
+  const checkboxes = Array.from(form.querySelectorAll('input[name="fields[]"]'));
+  const noResults = document.getElementById('no-results');
 
-      function activeFields(){
-        const vals = checkboxes.filter(cb=>cb.checked).map(cb=>cb.value);
-        if (vals.includes('all') || vals.length === 0) return ['all'];
-        return vals;
-      }
+  // 🟢 عند إرسال البحث (زر "بحث")
+  window.handleSearchSubmit = function(e){
+    e.preventDefault();
+    const term = qInput.value.trim();
+    if (term === '') {
+      // لا تفعل بحث فارغ، فقط أعد إظهار الكل
+      applyFilter();
+      return false;
+    }
+    // أرسل البحث إلى السيرفر عبر GET
+    const params = new URLSearchParams(new FormData(form)).toString();
+    window.location.href = form.action + '?' + params;
+    return false;
+  };
 
-      function matches(card, term, fields){
-        if (!term) return true;
-        term = term.toLowerCase();
-        const data = {
-          name: card.getAttribute('data-name')||'',
-          generic: card.getAttribute('data-generic')||'',
-          form: card.getAttribute('data-form')||'',
-          strength: card.getAttribute('data-strength')||''
-        };
-        if (fields.includes('all')){
-          return Object.values(data).some(v=>v.toLowerCase().includes(term));
-        }
-        return fields.some(f => (data[f]||'').toLowerCase().includes(term));
-      }
+  // 🟡 عند الكتابة — فلترة فورية للبطاقات الحالية فقط
+  function activeFields(){
+    const vals = checkboxes.filter(cb=>cb.checked).map(cb=>cb.value);
+    if (vals.includes('all') || vals.length === 0) return ['all'];
+    return vals;
+  }
 
-      function applyFilter(){
-        if (!container) return;
-        const term = qInput.value.trim();
-        const fields = activeFields();
-        const cards = Array.from(container.querySelectorAll('[data-card="drug"]'));
-        let visible = 0;
-        for (const c of cards){
-          const show = matches(c, term, fields);
-          c.style.display = show ? '' : 'none';
-          if (show) visible++;
-        }
-        document.getElementById('no-results')?.classList.toggle('hidden', visible !== 0);
-      }
+  function matches(card, term, fields){
+    if (!term) return true;
+    term = term.toLowerCase();
+    const data = {
+      name: card.getAttribute('data-name')||'',
+      generic: card.getAttribute('data-generic')||'',
+      form: card.getAttribute('data-form')||'',
+      strength: card.getAttribute('data-strength')||''
+    };
+    if (fields.includes('all')){
+      return Object.values(data).some(v=>v.toLowerCase().includes(term));
+    }
+    return fields.some(f => (data[f]||'').toLowerCase().includes(term));
+  }
 
-      qInput?.addEventListener('input', applyFilter);
-      checkboxes.forEach(cb=>cb.addEventListener('change', (e)=>{
-        if (e.target.value === 'all' && e.target.checked){
-          checkboxes.forEach(x=>{ if (x.value !== 'all') x.checked = false; });
-        } else if (e.target.value !== 'all' && e.target.checked){
-          form.querySelector('input[value="all"]').checked = false;
-        }
-        if (!checkboxes.some(x=>x.checked)){
-          form.querySelector('input[value="all"]').checked = true;
-        }
-        applyFilter();
-      }));
+  function applyFilter(){
+    if (!container) return;
+    const term = qInput.value.trim();
+    const fields = activeFields();
+    const cards = Array.from(container.querySelectorAll('[data-card="drug"]'));
+    let visible = 0;
+    for (const c of cards){
+      const show = matches(c, term, fields);
+      c.style.display = show ? '' : 'none';
+      if (show) visible++;
+    }
+    if (noResults) noResults.classList.toggle('hidden', visible !== 0);
+  }
 
-      // فلترة أولية عند التحميل
-      document.addEventListener('DOMContentLoaded', applyFilter);
-    })();
-  </script>
+  qInput?.addEventListener('input', applyFilter);
+  checkboxes.forEach(cb=>cb.addEventListener('change', (e)=>{
+    if (e.target.value === 'all' && e.target.checked){
+      checkboxes.forEach(x=>{ if (x.value !== 'all') x.checked = false; });
+    } else if (e.target.value !== 'all' && e.target.checked){
+      form.querySelector('input[value="all"]').checked = false;
+    }
+    if (!checkboxes.some(x=>x.checked)){
+      form.querySelector('input[value="all"]').checked = true;
+    }
+    applyFilter();
+  }));
+
+  document.addEventListener('DOMContentLoaded', applyFilter);
+})();
+</script>
+
 
   @if ($drugs->count())
     {{-- شبكة أعرض للبطاقات --}}
@@ -131,7 +149,8 @@
               @endphp
               @if ($img)
                 <img src="{{ $img }}" alt="صورة {{ $d->name }}"
-                     class="h-24 w-24 rounded-xl object-cover border border-[var(--line)]">
+       class="h-24 w-24 rounded-xl object-cover border border-[var(--line)] cursor-pointer hover:opacity-80 transition"
+       onclick="showImageModal('{{ $img }}', '{{ $d->name }}')">
               @else
                 {{-- Placeholder SVG لو مافيش صورة --}}
                 <div class="h-24 w-24 rounded-xl border border-[var(--line)] bg-[var(--bg-page)] flex items-center justify-center">
@@ -181,4 +200,88 @@
   @else
     <div id="no-results" class="text-center text-[var(--muted)] py-10">لا نتائج.</div>
   @endif
+  <script>
+(function(){
+  const qInput = document.getElementById('q');
+  const container = document.getElementById('drug-cards');
+  const form = document.getElementById('drug-search-form');
+  const checkboxes = form ? Array.from(form.querySelectorAll('input[name="fields[]"]')) : [];
+  const noResults = document.getElementById('no-results');
+
+  function activeFields(){
+    const vals = checkboxes.filter(cb=>cb.checked).map(cb=>cb.value);
+    if (vals.includes('all') || vals.length === 0) return ['all'];
+    return vals;
+  }
+
+  function matches(card, term, fields){
+    if (!term) return true;
+    term = term.toLowerCase();
+    const data = {
+      name: card.getAttribute('data-name')||'',
+      generic: card.getAttribute('data-generic')||'',
+      form: card.getAttribute('data-form')||'',
+      strength: card.getAttribute('data-strength')||''
+    };
+    if (fields.includes('all')){
+      return Object.values(data).some(v=>v.includes(term));
+    }
+    return fields.some(f => (data[f]||'').includes(term));
+  }
+
+  function applyFilter(){
+    if (!container) return;
+    const term = qInput.value.trim();
+    const fields = activeFields();
+    const cards = Array.from(container.querySelectorAll('[data-card="drug"]'));
+    let visible = 0;
+    for (const c of cards){
+      const show = matches(c, term, fields);
+      c.style.display = show ? '' : 'none';
+      if (show) visible++;
+    }
+    if (noResults) noResults.classList.toggle('hidden', visible !== 0);
+  }
+
+  if (qInput) qInput.addEventListener('input', applyFilter);
+  checkboxes.forEach(cb=>cb.addEventListener('change', applyFilter));
+  document.addEventListener('DOMContentLoaded', applyFilter);
+})();
+</script>
+<!-- نافذة عرض الصورة -->
+<div id="image-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+  <div class="relative bg-[var(--bg-card)] rounded-2xl p-4 max-w-[90vw] max-h-[90vh]">
+    <button onclick="closeImageModal()" 
+            class="absolute top-2 right-2 bg-red-600 text-white rounded-full px-2 py-1 text-sm hover:bg-red-700">
+      ×
+    </button>
+    <img id="modal-image" src="" alt="" class="max-w-full max-h-[80vh] rounded-xl shadow-lg object-contain">
+    <div id="modal-caption" class="text-center mt-3 text-white text-sm"></div>
+  </div>
+</div>
+<script>
+function showImageModal(src, name) {
+  const modal = document.getElementById('image-modal');
+  const img = document.getElementById('modal-image');
+  const caption = document.getElementById('modal-caption');
+
+  img.src = src;
+  caption.textContent = name || '';
+  modal.classList.remove('hidden');
+}
+
+function closeImageModal() {
+  document.getElementById('image-modal').classList.add('hidden');
+}
+
+// إغلاق النافذة عند النقر خارج الصورة
+document.addEventListener('click', function(e){
+  const modal = document.getElementById('image-modal');
+  if (!modal.classList.contains('hidden') && e.target === modal) {
+    closeImageModal();
+  }
+});
+</script>
+
+
 @endsection

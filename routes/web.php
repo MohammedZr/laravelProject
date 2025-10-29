@@ -35,7 +35,7 @@ Route::get('/redirect', function () {
     return match ($role) {
         'admin'    => redirect('/admin/dashboard'),
         'company'  => redirect('/company/groups'),
-        default    => redirect('/pharmacy/search'),
+        default    => redirect('/delivery/tasks'),
     };
 })->middleware('auth');
 
@@ -87,7 +87,9 @@ Route::middleware(['auth','role:delivery'])
     Route::get('/tasks', [DeliveryDashboard::class, 'index'])->name('dashboard');
     Route::get('orders/{order}', [DeliveryDashboard::class, 'show'])->name('orders.show');
     Route::patch('orders/{order}/status', [DeliveryDashboard::class, 'updateStatus'])->name('orders.updateStatus');
+    Route::get('orders/{order}/print', [DeliveryDashboard::class, 'print'])->name('orders.print');
 });
+
 
 
 Route::get('/force-logout', function () {

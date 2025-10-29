@@ -7,13 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 class Delivery extends Model
 {
     protected $fillable = [
-        'order_id','company_id','delivery_user_id','status','delivered_at'
+        'order_id',
+        'company_id',
+        'delivery_user_id',
+        'status',
+        'delivered_at'
     ];
 
-    protected $casts = [
-        'delivered_at' => 'datetime',
-    ];
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
 
-    public function order(){ return $this->belongsTo(Order::class); }
-    public function courier(){ return $this->belongsTo(User::class, 'delivery_user_id'); }
+    public function courier()
+    {
+        return $this->belongsTo(User::class, 'delivery_user_id');
+    }
 }
+    

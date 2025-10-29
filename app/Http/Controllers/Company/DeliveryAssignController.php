@@ -12,31 +12,43 @@ class DeliveryAssignController extends Controller
 {
     public function assign(Request $request, Order $order)
     {
-        // تأكد أن الشركة المالكة للطلب هي الحالية
+        // ✅ تأكيد ملكية الشركة للطلب
         abort_unless($order->company_id === auth()->id(), 403);
 
         $data = $request->validate([
-            'courier_id' => ['required','exists:users,id']
+            'courier_id' => ['required', 'exists:users,id'],
         ]);
 
         $courier = User::where('id', $data['courier_id'])
             ->where('role', 'delivery')
-            ->where('company_id', auth()->id()) // مندوب تابع لنفس الشركة
+            ->where('company_id', auth()->id()) // فقط مندوبي الشركة الحالية
             ->firstOrFail();
 
+        // ✅ تحديث أو إنشاء سجل التوصيل
         Delivery::updateOrCreate(
             ['order_id' => $order->id],
-            ['courier_id' => $courier->id, 'status' => 'assigned', 'assigned_at' => now()]
+            [
+                'company_id'       => auth()->id(),
+                'delivery_user_id' => $courier->id,
+                'status'           => 'assigned',
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ]
         );
 
-        // ممكن تحدّث حالة الطلب داخليًا لو حاب (تبقى pending حتى يستلم)
-        return back()->with('success','تم إسناد الطلب إلى المندوب.');
+        // ✅ يمكن أيضًا تحديث حالة الطلب مباشرة (اختياري)
+        $order->update(['status' => 'out_for_delivery']);
+
+        return back()->with('success', 'تم إسناد الطلب إلى المندوب بنجاح.');
     }
 
     public function unassign(Order $order)
     {
         abort_unless($order->company_id === auth()->id(), 403);
+
         optional($order->delivery)->delete();
-        return back()->with('success','تم إلغاء الإسناد.');
+        $order->update(['status' => 'pending']);
+
+        return back()->with('success', 'تم إلغاء الإسناد.');
     }
 }
