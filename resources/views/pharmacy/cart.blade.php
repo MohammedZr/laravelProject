@@ -30,10 +30,11 @@
           <div class="text-sm text-[var(--muted)]">الإجمالي: {{ number_format($total, 2) }}</div>
         </div>
 
-        <form method="POST" action="{{ route('pharmacy.orders.checkout.company', $companyId) }}">
-          @csrf
-          <button class="btn h-10 px-4 rounded-xl bg-[var(--brand)] text-white">إرسال طلبية لهذه الشركة</button>
-        </form>
+       <form action="{{ route('pharmacy.orders.checkout.company', $company->id) }}" method="POST">
+    @csrf
+    <button type="submit" class="btn btn-primary">📦 إرسال الطلب</button>
+</form>
+
       </div>
 
       <div class="mt-4 overflow-x-auto">

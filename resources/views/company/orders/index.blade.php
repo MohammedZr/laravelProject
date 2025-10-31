@@ -84,47 +84,23 @@
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <script>
-window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: 'local',
-    wsHost: window.location.hostname,
-    wsPort: 6001,
-    forceTLS: false,
-    disableStats: true,
-});
+window.Echo.private(`App.Models.User.${userId}`)
+  .listen('.NewOrderCreated', (e) => {
+      console.log('حدث جديد:', e);
 
-// ✅ الاستماع للقناة العامة للشركات
-Echo.channel('company.orders')
-    .listen('.order.created', (e) => {
-        console.log('طلب جديد:', e.order);
+      // تشغيل الصوت
+      const audio = new Audio('/sounds/new_order.wav');
+      audio.play().catch(err => console.warn('لم يتم تشغيل الصوت:', err));
 
-        // 🔔 تشغيل صوت الجرس
-        const audio = new Audio('/sounds/notify.mp3');
-        audio.play();
+      // إشعار بصري
+      if (Notification.permission === 'granted') {
+          new Notification('📦 طلب جديد!', {
+              body: `الطلب رقم ${e.order.id} من ${e.order.pharmacy.name}`,
+              icon: '/images/logo.png', // ضع مسار شعار شركتك
+          });
+      }
+  });
 
-        // 💬 إشعار داخل الصفحة
-        const div = document.createElement('div');
-        div.innerHTML = `
-          <div class="fixed top-5 left-5 bg-green-600 text-white px-4 py-2 rounded-xl shadow-lg z-[9999] animate-bounce">
-            🔔 طلب جديد #${e.order.id} من ${e.order.pharmacy?.name ?? 'صيدلية'}
-          </div>
-        `;
-        document.body.appendChild(div);
-        setTimeout(()=>div.remove(), 5000);
-
-        // 🌐 إشعار المتصفح
-        if (Notification.permission === 'granted') {
-            new Notification('طلبية جديدة!', {
-                body: `طلب رقم #${e.order.id} من ${e.order.pharmacy?.name ?? 'صيدلية'}`,
-                icon: '/favicon.ico'
-            });
-        }
-    });
-
-// ✨ طلب إذن إشعارات المتصفح مرة واحدة
-if (Notification.permission !== 'granted') {
-    Notification.requestPermission();
-}
 </script>
 
 @endsection

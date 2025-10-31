@@ -69,27 +69,34 @@
         </div>
       @endif
 
-      <div class="mt-4 grid grid-cols-2 gap-2">
-        {{-- ابدأ التسليم (إن لم يكن Out For Delivery) --}}
-        @if($order->status !== 'out_for_delivery' && $order->status !== 'completed')
-          <form method="POST" action="{{ route('delivery.orders.updateStatus', $order) }}">
-            @csrf @method('PATCH')
-            <input type="hidden" name="status" value="out_for_delivery">
-            <button class="btn w-full">🚚 ابدأ التوصيل</button>
-          </form>
-        @endif
+      <div class="mt-4 grid grid-cols-3 gap-2">
+  {{-- ابدأ التسليم --}}
+  @if($order->status !== 'out_for_delivery' && $order->status !== 'completed')
+    <form method="POST" action="{{ route('delivery.orders.updateStatus', $order) }}">
+      @csrf @method('PATCH')
+      <input type="hidden" name="status" value="out_for_delivery">
+      <button class="btn w-full">🚚 ابدأ التوصيل</button>
+    </form>
+  @endif
 
-        {{-- تم التسليم (يتفعل فقط عند القرب) --}}
-        <form method="POST" action="{{ route('delivery.orders.updateStatus', $order) }}">
-          @csrf @method('PATCH')
-          <input type="hidden" name="status" value="completed">
-          <button id="deliver-btn" class="btn btn-danger w-full" {{ ($order->status === 'completed') ? 'disabled' : '' }}>
-            {{ $order->status === 'completed' ? '✅ تم التسليم' : '🚫 اقترب أولًا' }}
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
+  {{-- زر الاتجاهات على خرائط Google --}}
+  @if($targetLat && $targetLng)
+    <a href="https://www.google.com/maps/dir/?api=1&destination={{ $targetLat }},{{ $targetLng }}"
+       target="_blank"
+       class="btn btn-outline w-full flex items-center justify-center gap-1">
+      🗺️ الاتجاهات
+    </a>
+  @endif
+
+  {{-- تم التسليم --}}
+  <form method="POST" action="{{ route('delivery.orders.updateStatus', $order) }}">
+    @csrf @method('PATCH')
+    <input type="hidden" name="status" value="completed">
+    <button id="deliver-btn" class="btn btn-danger w-full" {{ ($order->status === 'completed') ? 'disabled' : '' }}>
+      {{ $order->status === 'completed' ? '✅ تم التسليم' : '🚫 اقترب أولًا' }}
+    </button>
+  </form>
+</div>
 
   {{-- Leaflet CDN --}}
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>

@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Notifications\GlobalNotification;
+use App\Models\Pharmacy;
+// use App\Models\Delivery;
+
 
 class OrderController extends Controller
 {
@@ -56,15 +60,30 @@ class OrderController extends Controller
     }
 
     public function updateStatus(Request $request, Order $order)
-    {
-        abort_unless($order->company_id === auth()->id(), 403);
+{
+    abort_unless($order->company_id === auth()->id(), 403);
 
-        $validated = $request->validate([
-            'status' => 'required|string|in:pending,confirmed,preparing,out_for_delivery,completed,cancelled'
-        ]);
+    $validated = $request->validate([
+        'status' => 'required|string|in:pending,confirmed,preparing,out_for_delivery,completed,cancelled'
+    ]);
 
-        $order->update(['status' => $validated['status']]);
+    $order->update(['status' => $validated['status']]);
 
-        return back()->with('success', 'تم تحديث حالة الطلب بنجاح.');
+    // 🔔 إشعار الصيدلية بتحديث حالة الطلب
+    $pharmacy = User::where('id', $order->user_id)
+                    ->where('role', 'pharmacy')
+                    ->first();
+
+    if ($pharmacy) {
+        $pharmacy->notify(new GlobalNotification(
+            'تحديث حالة الطلب',
+            'تم تغيير حالة طلبك إلى: ' . $order->status,
+            route('pharmacy.orders.show', $order->id)
+        ));
     }
+
+    return back()->with('success', 'تم تحديث حالة الطلب بنجاح.');
+}
+
+
 }

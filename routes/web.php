@@ -35,9 +35,15 @@ Route::get('/redirect', function () {
     return match ($role) {
         'admin'    => redirect('/admin/dashboard'),
         'company'  => redirect('/company/groups'),
-        default    => redirect('/delivery/tasks'),
+        'delivery' => redirect('/delivery/tasks'),
+        'pharmacy' => redirect('/pharmacy/search'),
     };
 })->middleware('auth');
+
+Route::post('/notifications/read-all', function () {
+    auth()->user()->unreadNotifications->markAsRead();
+    return back();
+})->name('notifications.readAll')->middleware('auth');
 
 Route::middleware(['auth','role:company'])->prefix('company')->name('company.')->group(function () {
     Route::get('groups',        [DrugGroupController::class, 'index'])->name('groups.index');
@@ -78,6 +84,8 @@ Route::middleware(['auth','role:pharmacy'])->prefix('pharmacy')->name('pharmacy.
     // (اختياري) صفحة لائحة الطلبيات
      Route::get('orders', [PharmacyOrderController::class, 'index'])->name('orders.index');
         Route::get('orders/{order}', [PharmacyOrderController::class, 'show'])->name('orders.show'); 
+            Route::get('orders/{order}/success', [PharmacyOrderController::class, 'success'])->name('orders.success');
+
 });
 
 
@@ -88,6 +96,7 @@ Route::middleware(['auth','role:delivery'])
     Route::get('orders/{order}', [DeliveryDashboard::class, 'show'])->name('orders.show');
     Route::patch('orders/{order}/status', [DeliveryDashboard::class, 'updateStatus'])->name('orders.updateStatus');
     Route::get('orders/{order}/print', [DeliveryDashboard::class, 'print'])->name('orders.print');
+
 });
 
 
